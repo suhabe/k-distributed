@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/evm-semantics" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/evm-semantics/.build/pandoc-tangle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/k" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/k/haskell-backend/src/main/native/haskell-backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/k/llvm-backend/src/main/native/llvm-backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdocker/evm-semantics" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdocker/evm-semantics/.build/pandoc-tangle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdocker/k" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdocker/k/haskell-backend/src/main/native/haskell-backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdocker/k/llvm-backend/src/main/native/llvm-backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kevm-verify-benchmarks" vcs="Git" />
+  </component>
+</project>

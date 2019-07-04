@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+echo Script name: $0
+echo $# arguments 
+if [$# -ne 1]; 
+    then echo "illegal number of parameters"
+fi
+
+DIR=k-$1
+git clone git@github.com:kframework/k.git $DIR
+cd $DIR
+
+docker build -f Dockerfile.arch .

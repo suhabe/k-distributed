@@ -1,0 +1,20 @@
+FROM alpine:3.9
+
+RUN apt-get update && \
+    apt-get install -y openjdk-8-jdk cmake z3 libz3-dev pkg-config curl \
+                        libtool libz3-dev pkg-config z3 zlib1g-dev
+
+RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+
+ARG APP_DIR=/app
+WORKDIR ${APP_DIR}
+
+ENV LC_ALL=C.UTF-8
+
+ADD k ${APP_DIR}/k
+ADD evm-semantics ${APP_DIR}/evm-semantics
+ADD /home/sbugrara/kevm-verify-benchmarks/0-simple00-0.4.24 ${APP_DIR}/0-simple00-0.4.24
+
+RUN apt-get install -y flex
+RUN cd ${APP_DIR}/evm-semantics && ${APP_DIR}/k/k-distribution/target/release/k/bin/kompile -v --debug --backend java -I .build/java -d .build/java --main-module ETHEREUM-SIMULATION --syntax-module ETHEREUM-SIMULATION .build/java/driver.k
