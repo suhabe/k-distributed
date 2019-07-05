@@ -3,18 +3,24 @@ extern crate rusoto_s3;
 extern crate rusoto_rds;
 extern crate postgres;
 extern crate uuid;
+extern crate postgres_native_tls;
 
 use rusoto_core::Region;
 use rusoto_rds::{RdsClient, Rds};
 use rusoto_s3::{S3Client, S3, PutObjectRequest};
-use postgres::{Client, NoTls, Error};
 use uuid::Uuid;
-use std::fs::File;
+use std::fs;
+use std::env;
+
+use native_tls::{Certificate, TlsConnector};
+use postgres_native_tls::MakeTlsConnector;
+use postgres::{Client, NoTls};
 
 fn main() {
-  connect_db();
+    connect_db();
 }
 
+/*
 fn connect_s3() {
     let client = S3Client::new(Region::UsEast2);
     let bucket_name = "kjob";
@@ -39,7 +45,7 @@ fn connect_s3() {
     }
 
     s3_client.put_object().sync().expect("could not upload");
-}
+}*/
 
 fn describe_db_instances() {
     let client = RdsClient::new(Region::UsEast2);
@@ -59,19 +65,27 @@ fn describe_db_instances() {
 }
 
 fn connect_db() {
-    let hostname = "kprovedb2.cqfgjsgwdka2.us-east-2.rds.amazonaws.com";
-    let username = "kuser";
-    let password = "";
+    let hostname = &env::var("APP_DB_HOST").expect("APP_DB_HOST not set");
+    let port = env::var("APP_DB_PORT").expect("APP_DB_PORT not set").parse::<u16>().expect("APP_DB_PORT not set");
+    let username = &env::var("APP_DB_USER").expect("APP_DB_USER not set");
+    let password = &env::var("APP_DB_PASS").expect("APP_DB_PASS not set");
+    let rdscacert = &env::var("APP_RDS_CA_BUNDLE_PEM").expect("APP_RDS_CA_BUNDLE_PEM not set");
 
-    let connectstr = format!("host={} user={}", hostname, username);
+    let cert = fs::read(rdscacert).expect("Cannot find pem file");
+    let cert = Certificate::from_pem(&cert).expect("Cannot parse pem file");
+    let connector = TlsConnector::builder()
+        .add_root_certificate(cert)
+        .build()
+        .expect("Cannot create connector");
+    let connector = MakeTlsConnector::new(connector);
 
     let mut client = Client::configure()
-         .host(hostname)
-         .user(username)
-         .password(password)
-         .port(5432)
-         .password(password)
-         .connect(NoTls)?;
+            .host(hostname)
+            .user(username)
+            .password(password)
+            .port(port)
+            .connect(connector)
+            .expect("Could not connect to db.");
 
     let benchmark_name = "0-simple00-0.5.0";
 
@@ -80,7 +94,7 @@ fn connect_db() {
 
     client.execute(&insert, &[&benchmark_name]);
 
-     for row in client.query("SELECT id,name FROM job", &[])? {
+     for row in client.query("SELECT id,name FROM job", &[]).unwrap() {
          let id: i32 = row.get(0);
          let name: &str = row.get(1);
 
