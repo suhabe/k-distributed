@@ -61,7 +61,7 @@ fn describe_db_instances() {
 fn connect_db() {
     let hostname = "kprovedb2.cqfgjsgwdka2.us-east-2.rds.amazonaws.com";
     let username = "kuser";
-    let password = "Ni7spWcyDL9kyBj";
+    let password = "";
 
     let connectstr = format!("host={} user={}", hostname, username);
 
