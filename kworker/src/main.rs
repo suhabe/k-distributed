@@ -19,9 +19,10 @@ use postgres::{Client, NoTls, Transaction};
 use chrono::{DateTime, Utc};
 
 fn main() {
+    exec(reset_job);
     list_jobs();
-    pop_job();
-    list_jobs();
+    //let job = exec(pop_job);
+    //println!("{:?}", job);
 }
 
 fn list_jobs() {
@@ -32,18 +33,22 @@ fn list_jobs() {
     });
 }
 
-fn pop_job() {
-    exec(|trans| {
-        let jobs = get_jobs(trans);
-        let pop: Option<Job> = jobs.into_iter().find(|job| job.processing_dt.is_none());
-        match pop {
-            Some(job) => {
-                let x = job.id;
-                trans.execute("UPDATE job SET processing_dt = $1 WHERE id = $2", &[&Utc::now(), &job.id]).unwrap();
-            }
-            None => ()
+fn reset_job(trans: &mut Transaction) -> i32  {
+    trans.execute("UPDATE job SET processing_dt = null", &[]).unwrap();
+    0
+}
+
+fn pop_job(trans: &mut Transaction) -> Option<i32> {
+    let mut jobs = get_jobs(trans);
+    let pop: Option<Job> = jobs.into_iter().find(|j| j.processing_dt.is_none());
+    match pop {
+        Some(job) => {
+            let now = Utc::now();
+            trans.execute("UPDATE job SET processing_dt = $1 WHERE id = $2", &[&now, &job.id]).unwrap();
+            Some(job.id)
         }
-    });
+        None => None
+    }
 }
 
 #[derive(Debug)]
@@ -106,7 +111,7 @@ fn get_jobs(trans: &mut Transaction) -> Vec<Job> {
     jobs
 }
 
-fn exec(task: fn(&mut Transaction)) {
+fn exec<T>(task: fn(&mut Transaction) -> T) -> T {
     let hostname = &env::var("APP_DB_HOST").expect("APP_DB_HOST not set");
     let port = env::var("APP_DB_PORT").expect("APP_DB_PORT not set").parse::<u16>().expect("APP_DB_PORT not set");
     let username = &env::var("APP_DB_USER").expect("APP_DB_USER not set");
@@ -131,8 +136,10 @@ fn exec(task: fn(&mut Transaction)) {
 
     let mut trans = conn.transaction().unwrap();
 
-    task(&mut trans);
+    let r = task(&mut trans);
 
     trans.commit();
+
+    return r;
 }
 
