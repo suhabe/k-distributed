@@ -19,22 +19,34 @@ use postgres::{Client, NoTls, Transaction};
 use chrono::{DateTime, Utc};
 
 fn main() {
+    list_jobs();
+    pop_job();
+    list_jobs();
+}
+
+fn list_jobs() {
     exec(|trans| {
         for job in get_jobs(trans) {
-            if job.processing_dt.is_some() {
-
-            }
-            println!("{}", job.name);
+            println!("{:?}", job);
         }
     });
 }
 
 fn pop_job() {
     exec(|trans| {
-        get_jobs(trans).iter().find(|&&job| job.processing_dt.is_none());
+        let jobs = get_jobs(trans);
+        let pop: Option<Job> = jobs.into_iter().find(|job| job.processing_dt.is_none());
+        match pop {
+            Some(job) => {
+                let x = job.id;
+                trans.execute("UPDATE job SET processing_dt = $1 WHERE id = $2", &[&Utc::now(), &job.id]).unwrap();
+            }
+            None => ()
+        }
     });
 }
 
+#[derive(Debug)]
 struct Job {
     id: i32,
     name: String,
@@ -120,5 +132,7 @@ fn exec(task: fn(&mut Transaction)) {
     let mut trans = conn.transaction().unwrap();
 
     task(&mut trans);
+
+    trans.commit();
 }
 
