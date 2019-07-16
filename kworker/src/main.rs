@@ -21,6 +21,9 @@ use chrono::{DateTime, Utc};
 fn main() {
     exec(|trans| {
         for job in get_jobs(trans) {
+            if job.processing_dt.is_some() {
+
+            }
             println!("{}", job.name);
         }
     });
@@ -28,7 +31,7 @@ fn main() {
 
 fn pop_job() {
     exec(|trans| {
-
+        get_jobs(trans).iter().find(|&&job| job.processing_dt.is_none());
     });
 }
 
