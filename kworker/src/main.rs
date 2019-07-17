@@ -19,10 +19,13 @@ use postgres::{Client, NoTls, Transaction};
 use chrono::{DateTime, Utc};
 
 fn main() {
-    exec(reset_job);
+    //exec(reset_job);
+    //list_jobs();
+    let job = exec(pop_job).unwrap();
     list_jobs();
-    //let job = exec(pop_job);
-    //println!("{:?}", job);
+    println!("Processing job {:?}", job);
+    //create new directory for this job
+    //download the request url tar ball
 }
 
 fn list_jobs() {
@@ -138,7 +141,7 @@ fn exec<T>(task: fn(&mut Transaction) -> T) -> T {
 
     let r = task(&mut trans);
 
-    trans.commit();
+    trans.commit().unwrap();
 
     return r;
 }
