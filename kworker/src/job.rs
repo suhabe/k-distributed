@@ -12,7 +12,8 @@ pub struct Job {
     id: i32,
     name: String,
     request_dt: Option<chrono::DateTime<Utc>>,
-    request_url: Option<String>,
+    s3_bucket: Option<String>,
+    s3_key: Option<String>,
     timeout_sec: Option<i32>,
     processing_dt: Option<chrono::DateTime<Utc>>,
     result_dt: Option<chrono::DateTime<Utc>>,
@@ -24,6 +25,13 @@ pub fn list_jobs(trans: &mut Transaction) {
     for job in get_jobs(trans) {
         println!("{:?}", job);
     }
+}
+
+//benchmark_name, bucket_name, benchmark_key, 1800
+pub fn new_job(trans: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, timeout_sec: i32) {
+    let request_dt = Utc::now();
+    trans.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,timeout_sec) VALUES ($1,$2,$3,$4,$5)",
+                  &[benchmark_name, &request_dt, bucket_name, benchmark_key, &timeout_sec]).unwrap();
 }
 
 pub fn reset_job(trans: &mut Transaction) -> i32  {
@@ -50,7 +58,8 @@ pub fn get_jobs(trans: &mut Transaction) -> Vec<Job> {
         "id",
         "name",
         "request_dt",
-        "request_url",
+        "s3_bucket",
+        "s3_key",
         "timeout_sec",
         "processing_dt",
         "result_dt",
@@ -65,7 +74,8 @@ pub fn get_jobs(trans: &mut Transaction) -> Vec<Job> {
         let id: i32 = row.get("id");
         let name: String = row.get("name");
         let request_dt: Option<DateTime<Utc>> = row.get("request_dt");
-        let request_url: Option<String> = row.get("request_url");
+        let s3_bucket: Option<String> = row.get("s3_bucket");
+        let s3_key: Option<String> = row.get("s3_key");
         let timeout_sec: Option<i32> = row.get("timeout_sec");
         let processing_dt: Option<DateTime<Utc>> = row.get("processing_dt");
         let result_dt: Option<DateTime<Utc>> = row.get("result_dt");
@@ -76,7 +86,8 @@ pub fn get_jobs(trans: &mut Transaction) -> Vec<Job> {
             id,
             name,
             request_dt,
-            request_url,
+            s3_bucket,
+            s3_key,
             timeout_sec,
             processing_dt,
             result_dt,

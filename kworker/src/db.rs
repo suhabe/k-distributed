@@ -10,6 +10,10 @@ use postgres::{Client, NoTls, Transaction};
 use chrono::{DateTime, Utc};
 
 pub fn exec<T>(task: fn(&mut Transaction) -> T) -> T {
+    return exec2(|trans| { task(trans) })
+}
+
+pub fn exec2<F,T>(task: F) -> T where F: FnOnce(&mut Transaction) -> T {
     let hostname = &env::var("APP_DB_HOST").expect("APP_DB_HOST not set");
     let port = env::var("APP_DB_PORT").expect("APP_DB_PORT not set").parse::<u16>().expect("APP_DB_PORT not set");
     let username = &env::var("APP_DB_USER").expect("APP_DB_USER not set");
