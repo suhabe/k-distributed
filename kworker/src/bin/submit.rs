@@ -1,17 +1,20 @@
 extern crate kworker;
 extern crate walkdir;
+extern crate env_logger;
 
 use kworker::db::{exec};
 use kworker::job::*;
-use kworker::s3::*;
+use kworker::s3::s3_upload_dir;
 use rusoto_core::Region;
 use rusoto_s3::{S3Client};
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::fs;
 use uuid::Uuid;
 
 fn main() {
+    env_logger::init();
+
     let args = env::args().collect::<Vec<String>>();
     let dirpath = PathBuf::from(&args[1]);
     let dirpathbuf = fs::canonicalize(&dirpath).unwrap();
@@ -22,23 +25,9 @@ fn main() {
     let client = S3Client::new(Region::UsEast2);
     let bucket_name = String::from("kjob");
 
-   // s3_upload_dir(&client, &bucket_name, &benchmark_key, &benchmark_dir);
+    s3_upload_dir(&client, &bucket_name, &benchmark_key, &benchmark_dir);
 
     exec(|trans| { new_job(trans, &benchmark_name, &bucket_name, &benchmark_key, 1800) } );
 
     exec(list_jobs);
-
-    //let client = S3Client::new(Region::UsEast2);
-    //let bucket_name = String::from("kjob");
-
-    /*let local_dir_path = String::from("/home/sbugrara/kevm-verify-benchmarks/0-simple00-0.4.24");
-    let key_prefix = String::from("0-simple00-0.4.24");
-    let key_root_dir = format!("{}-{}", key_prefix, Uuid::new_v4());
-
-    s3_upload_dir(&client, &bucket_name, &key_root_dir, &local_dir_path);*/
-
-    /*
-    let key_root_dir = String::from("0-simple00-0.4.24-44553a4d-ac2a-4f17-96b8-fbba8633c18e");
-    let dest_dir = String::from("/tmp");
-    s3_download_dir(&client, &bucket_name, &key_root_dir, &dest_dir);*/
 }

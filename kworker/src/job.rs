@@ -1,75 +1,85 @@
 extern crate postgres;
 extern crate chrono;
 
-use std::fs;
-use std::env;
 use postgres::Transaction;
 
 use chrono::{DateTime, Utc};
 
 #[derive(Debug)]
 pub struct Job {
-    id: i32,
-    name: String,
-    request_dt: Option<chrono::DateTime<Utc>>,
-    s3_bucket: Option<String>,
-    s3_key: Option<String>,
-    timeout_sec: Option<i32>,
-    processing_dt: Option<chrono::DateTime<Utc>>,
-    result_dt: Option<chrono::DateTime<Utc>>,
-    result_url: Option<String>,
-    completed_dt: Option<chrono::DateTime<Utc>>
+    pub id: i32,
+    pub name: String,
+    pub request_dt: Option<chrono::DateTime<Utc>>,
+    pub s3_bucket: Option<String>,
+    pub s3_key: Option<String>,
+    pub timeout_sec: Option<i32>,
+    pub processing_dt: Option<chrono::DateTime<Utc>>,
+    pub result_dt: Option<chrono::DateTime<Utc>>,
+    pub result_url: Option<String>,
+    pub completed_dt: Option<chrono::DateTime<Utc>>
 }
 
-pub fn list_jobs(trans: &mut Transaction) {
-    for job in get_jobs(trans) {
-        println!("{:?}", job);
+pub fn get_job(tx: &mut Transaction, job_id: i32) -> Job {
+    let jobs = get_jobs(tx, Some(job_id));
+    jobs.into_iter().next().unwrap()
+}
+
+pub fn list_jobs(tx: &mut Transaction) {
+    let jobs = get_jobs(tx, None);
+
+    if jobs.is_empty() {
+        info!("Job queue is empty");
+    }
+    for job in jobs {
+        info!("{:?}", job);
     }
 }
 
 //benchmark_name, bucket_name, benchmark_key, 1800
-pub fn new_job(trans: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, timeout_sec: i32) {
+pub fn new_job(tx: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, timeout_sec: i32) {
     let request_dt = Utc::now();
-    trans.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,timeout_sec) VALUES ($1,$2,$3,$4,$5)",
+    tx.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,timeout_sec) VALUES ($1,$2,$3,$4,$5)",
                   &[benchmark_name, &request_dt, bucket_name, benchmark_key, &timeout_sec]).unwrap();
 }
 
-pub fn reset_job(trans: &mut Transaction) -> i32  {
-    trans.execute("UPDATE job SET processing_dt = null", &[]).unwrap();
+pub fn reset_jobs(tx: &mut Transaction) -> i32  {
+    tx.execute("UPDATE job SET processing_dt = null", &[]).unwrap();
     0
 }
 
-pub fn pop_job(trans: &mut Transaction) -> Option<i32> {
-    let mut jobs = get_jobs(trans);
+pub fn delete_jobs(tx: &mut Transaction) -> i32  {
+    tx.execute("DELETE from job", &[]).unwrap();
+    0
+}
+
+pub fn pop_job(tx: &mut Transaction) -> Option<i32> {
+    let jobs = get_jobs(tx, None);
     let pop: Option<Job> = jobs.into_iter().find(|j| j.processing_dt.is_none());
     match pop {
         Some(job) => {
             let now = Utc::now();
-            trans.execute("UPDATE job SET processing_dt = $1 WHERE id = $2", &[&now, &job.id]).unwrap();
+            tx.execute("UPDATE job SET processing_dt = $1 WHERE id = $2", &[&now, &job.id]).unwrap();
             Some(job.id)
         }
         None => None
     }
 }
 
-pub fn get_jobs(trans: &mut Transaction) -> Vec<Job> {
+pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
     let mut jobs = Vec::new();
-    let fields = vec![
-        "id",
-        "name",
-        "request_dt",
-        "s3_bucket",
-        "s3_key",
-        "timeout_sec",
-        "processing_dt",
-        "result_dt",
-        "result_url",
-        "completed_dt"
-    ];
-    let select_fields = fields.join(",");
-    let query = format!("SELECT {} FROM job", select_fields);
 
-    for row in trans.query(query.as_str(), &[]).unwrap() {
+    let condition;
+    match job_id {
+        Some(id) => {
+            condition = format!("where id={}",id);
+        },
+        None => {
+            condition = String::from("");
+        }
+    }
+    let query = format!("SELECT * FROM job {}", condition);
+
+    for row in tx.query(query.as_str(), &[]).unwrap() {
 
         let id: i32 = row.get("id");
         let name: String = row.get("name");

@@ -7,5 +7,6 @@ use kworker::job::*;
 fn main() {
     env_logger::init();
 
+    exec(delete_jobs);
     exec(list_jobs);
 }

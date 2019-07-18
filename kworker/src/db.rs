@@ -6,8 +6,7 @@ use std::env;
 
 use native_tls::{Certificate, TlsConnector};
 use postgres_native_tls::MakeTlsConnector;
-use postgres::{Client, NoTls, Transaction};
-use chrono::{DateTime, Utc};
+use postgres::{Client, Transaction};
 
 pub fn exec<F,T>(task: F) -> T where F: FnOnce(&mut Transaction) -> T {
     let hostname = &env::var("APP_DB_HOST").expect("APP_DB_HOST not set");
