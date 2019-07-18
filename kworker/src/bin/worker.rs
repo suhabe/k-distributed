@@ -14,7 +14,7 @@ use log::{info};
 
 fn run(job_id: i32) {
     let job = exec(|tx| {get_job(tx, job_id)});
-    let client = S3Client::new(Region::UsEast2);
+    let client = S3Client::new(Region::frUsEast2);
     let dest_dir = std::env::var("APP_WORKER_DIR").unwrap();
 
     s3_download_dir(&client, &job.s3_bucket.unwrap(), &job.s3_key.unwrap(), &dest_dir);
