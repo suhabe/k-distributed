@@ -15,7 +15,7 @@ pub fn exec<F,T>(task: F) -> T where F: FnOnce(&mut Transaction) -> T {
     let password = &env::var("APP_DB_PASS").expect("APP_DB_PASS not set");
     let rdscacert = &env::var("APP_RDS_CA_BUNDLE_PEM").expect("APP_RDS_CA_BUNDLE_PEM not set");
 
-    let cert = fs::read(rdscacert).expect("Cannot find pem file");
+    let cert = fs::read(rdscacert).expect("Cannot find pem file used to AWS RDS");
     let cert = Certificate::from_pem(&cert).expect("Cannot parse pem file");
     let connector = TlsConnector::builder()
         .add_root_certificate(cert)
@@ -31,11 +31,11 @@ pub fn exec<F,T>(task: F) -> T where F: FnOnce(&mut Transaction) -> T {
         .connect(connector)
         .expect("Could not connect to db.");
 
-    let mut trans = conn.transaction().unwrap();
+    let mut trans = conn.transaction().expect("Could not create transaction");
 
     let r = task(&mut trans);
 
-    trans.commit().unwrap();
+    trans.commit().expect("Could not commit transaction");
 
     return r;
 }

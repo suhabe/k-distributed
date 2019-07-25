@@ -4,7 +4,8 @@ RUN apt-get update
 RUN apt-get install -qy openjdk-8-jre
 RUN apt-get install -qy z3
 RUN apt-get install -qy flex
-RUN apt-get clean && rm -rf /var/lib/apt
+RUN apt-get install -qy libssl1.0.0
+#RUN apt-get clean && rm -rf /var/lib/apt
 
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
@@ -16,8 +17,10 @@ ENV LC_ALL=C.UTF-8
 
 ADD k ${APP_DIR}/k
 ADD evm-semantics ${APP_DIR}/evm-semantics
-ADD 0-simple00-0.4.24 ${APP_DIR}/0-simple00-0.4.24
-ADD resources ${APP_DIR}/resources
+ADD kworker_target/worker ${APP_DIR}/worker
+ADD kworker_target/.env ${APP_DIR}
+ADD kworker_target/rds-combined-ca-bundle.pem ${APP_DIR}/rds-combined-ca-bundle.pem
 
-RUN apt-get install -y flex
 RUN cd ${APP_DIR}/evm-semantics && ${APP_DIR}/k/k-distribution/target/release/k/bin/kompile -v --debug --backend java -I .build/java -d .build/java --main-module ETHEREUM-SIMULATION --syntax-module ETHEREUM-SIMULATION .build/java/driver.k
+
+#ENTRYPOINT ["${APP_DIR}/worker"]

@@ -21,12 +21,12 @@ pub fn run(benchmarkpath: &Path, specname: &str) -> KResult {
     let mut output_file_path = benchmarkpath.to_path_buf();
     output_file_path.push("out.txt");
     info!("Output file: {:?}", &output_file_path);
-    fs::remove_file(&output_file_path);
+    let _ = fs::remove_file(&output_file_path);
 
     let mut error_file_path = benchmarkpath.to_path_buf();
     error_file_path.push("err.txt");
     info!("Error file: {:?}", &error_file_path);
-    fs::remove_file(&error_file_path);
+    let _ = fs::remove_file(&error_file_path);
 
     let javapath = std::env::var("APP_JAVA_PATH").unwrap();
     let kpath = std::env::var("APP_K_PATH").unwrap();
