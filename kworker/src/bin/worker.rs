@@ -6,21 +6,51 @@ extern crate env_logger;
 use kworker::db::{exec};
 use kworker::job::*;
 use kworker::s3::*;
+use kworker::k;
 use rusoto_core::Region;
 use rusoto_s3::{S3Client};
 use std::time;
 use std::thread::{sleep};
 use log::{info};
+use std::path::PathBuf;
 
 fn run(job_id: i32) {
     let job = exec(|tx| {get_job(tx, job_id)});
-    let client = S3Client::new(Region::frUsEast2);
+    let client = S3Client::new(Region::UsEast2);
     let dest_dir = std::env::var("APP_WORKER_DIR").unwrap();
 
-    s3_download_dir(&client, &job.s3_bucket.unwrap(), &job.s3_key.unwrap(), &dest_dir);
+    let s3_bucket = job.s3_bucket.unwrap().to_owned();
+    let s3_key = job.s3_key.unwrap().to_owned();
+
+    let down_dir = s3_download_dir(&client, &s3_bucket, &s3_key, &dest_dir);
+
+    let mut gen_dir = down_dir.clone();
+    gen_dir.push("generated");
+
+    let kres = k::run(gen_dir.as_path(), &job.spec_filename);
+
+    let output_key = match kres.output_file_path {
+        Some(ref p) => upload_log(&client, &s3_bucket, &s3_key, p),
+        None => String::from("")
+    };
+
+    let error_key = match kres.error_file_path {
+        Some(ref p) => upload_log(&client, &s3_bucket, &s3_key, p),
+        None => String::from("")
+    };
+
+    exec(|tx| {complete_job(tx, job_id, &output_key, &error_key, kres.status_code)});
+}
+
+fn upload_log(client: &S3Client, s3_bucket: &String, s3_key: &String, p: &PathBuf) -> String {
+    let filename = String::from(p.as_path().file_name().unwrap().to_str().unwrap());
+    let key = format!("{}/generated/{}", s3_key, &filename);
+    s3_upload_file(client, s3_bucket, &key, p);
+    key
 }
 
 fn main() {
+    dotenv::dotenv().ok();
     env_logger::init();
 
     loop {

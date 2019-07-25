@@ -1,13 +1,13 @@
 use rusoto_s3::{S3Client, S3, PutObjectRequest, ListObjectsRequest, GetObjectRequest};
 use std::io::prelude::*;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use std::io::{Write};
 
 
 pub fn s3_upload_dir(client: &S3Client, bucket_name: &String, key_root_dir: &String, local_dir_path: &String) {
-    info!("Uploading from S3 {} {} {}", &bucket_name, &key_root_dir, &local_dir_path);
+    info!("Uploading to S3 {} {} {}", &bucket_name, &key_root_dir, &local_dir_path);
 
     let key_root_dir = Path::new(key_root_dir);
 
@@ -32,7 +32,24 @@ pub fn s3_upload_dir(client: &S3Client, bucket_name: &String, key_root_dir: &Str
     }
 }
 
-pub fn s3_download_dir(client: &S3Client, bucket_name: &String, key_root_dir: &String, dest_dir: &String) {
+pub fn s3_upload_file(client: &S3Client, bucket_name: &String, bucket_key: &String, local_file_path: &PathBuf) {
+    info!("Uploading to S3 {} {} {:?}", &bucket_name, &bucket_key, &local_file_path);
+
+    let mut f = File::open(local_file_path).unwrap();
+    let mut contents: Vec<u8> = Vec::new();
+    f.read_to_end(&mut contents).unwrap();
+
+    let req = PutObjectRequest {
+        bucket: bucket_name.to_owned(),
+        key: bucket_key.to_owned(),
+        body: Some(contents.into()),
+        acl: Some(String::from("public-read")),
+        ..Default::default()
+    };
+    client.put_object(req).sync().expect("Couldn't PUT object");
+}
+
+pub fn s3_download_dir(client: &S3Client, bucket_name: &String, key_root_dir: &String, dest_dir: &String) -> PathBuf {
     info!("Downloading from S3 {} {} {}", &bucket_name, &key_root_dir, &dest_dir);
 
     let req = ListObjectsRequest {
@@ -69,4 +86,7 @@ pub fn s3_download_dir(client: &S3Client, bucket_name: &String, key_root_dir: &S
         println!("\t{:#?} {:#?}", &key, path.display());
     }
 
+    let down_dir: PathBuf = [&dest_dir, &key_root_dir].iter().collect();
+
+    down_dir
 }

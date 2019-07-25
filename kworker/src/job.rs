@@ -12,10 +12,12 @@ pub struct Job {
     pub request_dt: Option<chrono::DateTime<Utc>>,
     pub s3_bucket: Option<String>,
     pub s3_key: Option<String>,
+    pub spec_filename: String,
     pub timeout_sec: Option<i32>,
     pub processing_dt: Option<chrono::DateTime<Utc>>,
-    pub result_dt: Option<chrono::DateTime<Utc>>,
-    pub result_url: Option<String>,
+    pub output_log_s3_key: Option<String>,
+    pub error_log_s3_key: Option<String>,
+    pub status_code: Option<i32>,
     pub completed_dt: Option<chrono::DateTime<Utc>>
 }
 
@@ -36,10 +38,10 @@ pub fn list_jobs(tx: &mut Transaction) {
 }
 
 //benchmark_name, bucket_name, benchmark_key, 1800
-pub fn new_job(tx: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, timeout_sec: i32) {
+pub fn new_job(tx: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) {
     let request_dt = Utc::now();
-    tx.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,timeout_sec) VALUES ($1,$2,$3,$4,$5)",
-                  &[benchmark_name, &request_dt, bucket_name, benchmark_key, &timeout_sec]).unwrap();
+    tx.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6)",
+                  &[benchmark_name, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]).unwrap();
 }
 
 pub fn reset_jobs(tx: &mut Transaction) -> i32  {
@@ -49,6 +51,13 @@ pub fn reset_jobs(tx: &mut Transaction) -> i32  {
 
 pub fn delete_jobs(tx: &mut Transaction) -> i32  {
     tx.execute("DELETE from job", &[]).unwrap();
+    0
+}
+
+pub fn complete_job(tx: &mut Transaction, id: i32, output_log_s3_key: &String, error_log_s3_key: &String, status_code: i32) -> i32  {
+    let now = Utc::now();
+    tx.execute("UPDATE job SET output_log_s3_key = $1, error_log_s3_key = $2, status_code = $3, completed_dt = $4 where id = $5",
+               &[&output_log_s3_key, &error_log_s3_key, &status_code, &now, &id]).unwrap();
     0
 }
 
@@ -86,10 +95,12 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
         let request_dt: Option<DateTime<Utc>> = row.get("request_dt");
         let s3_bucket: Option<String> = row.get("s3_bucket");
         let s3_key: Option<String> = row.get("s3_key");
+        let spec_filename = row.get("spec_filename");
         let timeout_sec: Option<i32> = row.get("timeout_sec");
         let processing_dt: Option<DateTime<Utc>> = row.get("processing_dt");
-        let result_dt: Option<DateTime<Utc>> = row.get("result_dt");
-        let result_url: Option<String> = row.get("result_url");
+        let output_log_s3_key: Option<String> = row.get("output_log_s3_key");
+        let error_log_s3_key: Option<String> = row.get("error_log_s3_key");
+        let status_code: Option<i32> = row.get("status_code");
         let completed_dt: Option<DateTime<Utc>> = row.get("completed_dt");
 
         let job = Job {
@@ -98,10 +109,12 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
             request_dt,
             s3_bucket,
             s3_key,
+            spec_filename,
             timeout_sec,
             processing_dt,
-            result_dt,
-            result_url,
+            output_log_s3_key,
+            error_log_s3_key,
+            status_code,
             completed_dt
         };
 
