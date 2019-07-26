@@ -23,4 +23,4 @@ ADD kworker_target/rds-combined-ca-bundle.pem ${APP_DIR}/rds-combined-ca-bundle.
 
 RUN cd ${APP_DIR}/evm-semantics && ${APP_DIR}/k/k-distribution/target/release/k/bin/kompile -v --debug --backend java -I .build/java -d .build/java --main-module ETHEREUM-SIMULATION --syntax-module ETHEREUM-SIMULATION .build/java/driver.k
 
-#ENTRYPOINT ["${APP_DIR}/worker"]
+ENTRYPOINT [ "/app/worker" ]

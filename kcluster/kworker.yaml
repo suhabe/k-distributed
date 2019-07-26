@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kworker-job
+spec:
+  parallelism: 2
+  template:
+    metadata:
+      name: kworker-job
+    spec:
+      containers:
+        - name: c
+          image: 626351541105.dkr.ecr.us-east-2.amazonaws.com/kworker:latest
+      restartPolicy: OnFailure
