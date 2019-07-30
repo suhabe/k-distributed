@@ -1,11 +1,12 @@
 extern crate postgres;
 extern crate chrono;
+extern crate serde;
 
 use postgres::Transaction;
-
+use serde::Serialize;
 use chrono::{DateTime, Utc};
 
-#[derive(Debug)]
+#[derive(Debug,Serialize)]
 pub struct Job {
     pub id: i32,
     pub name: String,
