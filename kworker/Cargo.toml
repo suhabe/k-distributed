@@ -18,3 +18,5 @@ log = "0.4.7"
 env_logger = "0.6.2"
 wait-timeout = "0.2.0"
 dotenv = "0.14.1"
+handlebars = "2.0.1"
+serde = { version = "1.0", features = ["derive"] }
