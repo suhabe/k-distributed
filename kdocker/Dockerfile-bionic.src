@@ -17,10 +17,13 @@ ENV LC_ALL=C.UTF-8
 
 ADD k ${APP_DIR}/k
 ADD evm-semantics ${APP_DIR}/evm-semantics
+ADD evm-semantics-call-log ${APP_DIR}/evm-semantics-call-log
 ADD kworker_target/worker ${APP_DIR}/worker
 ADD kworker_target/.env ${APP_DIR}
 ADD kworker_target/rds-combined-ca-bundle.pem ${APP_DIR}/rds-combined-ca-bundle.pem
 
 RUN cd ${APP_DIR}/evm-semantics && ${APP_DIR}/k/k-distribution/target/release/k/bin/kompile -v --debug --backend java -I .build/java -d .build/java --main-module ETHEREUM-SIMULATION --syntax-module ETHEREUM-SIMULATION .build/java/driver.k
+
+RUN cd ${APP_DIR}/evm-semantics-call-log && ${APP_DIR}/k/k-distribution/target/release/k/bin/kompile -v --debug --backend java -I .build/java -d .build/java --main-module ETHEREUM-SIMULATION --syntax-module ETHEREUM-SIMULATION .build/java/driver.k
 
 ENTRYPOINT [ "/app/worker" ]

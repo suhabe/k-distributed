@@ -5,6 +5,15 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use std::io::{Write};
 
+pub fn s3_url(bucket_name: &String, key_name: &String) -> String {
+    format!("http://{}.s3.amazonaws.com/{}", bucket_name, key_name)
+}
+
+pub fn s3_url_opt(bucket_name: Option<String>, key_name: Option<String>) -> Option<String> {
+    let b = bucket_name?;
+    let k = key_name?;
+    Some(s3_url(&b, &k))
+}
 
 pub fn s3_upload_dir(client: &S3Client, bucket_name: &String, key_root_dir: &String, local_dir_path: &String) {
     info!("Uploading to S3 {} {} {}", &bucket_name, &key_root_dir, &local_dir_path);

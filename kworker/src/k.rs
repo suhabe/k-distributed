@@ -7,15 +7,18 @@ use std::path::{Path,PathBuf};
 use std::time::{Duration, Instant};
 use std::fs::File;
 use std::fs;
+use std::io::{BufReader, BufRead};
 
 #[derive(Debug)]
 pub struct KResult {
     pub output_file_path: Option<PathBuf>,
     pub error_file_path: Option<PathBuf>,
-    pub status_code: i32
+    pub status_code: Option<i32>,
+    pub timed_out: bool,
+    pub proved: Option<bool>
 }
 
-pub fn run(benchmarkpath: &Path, specname: &str) -> KResult {
+pub fn run(benchmarkpath: &Path, specname: &str, kpath: &str, sempath: &str, timeout: Option<i32>) -> KResult {
     info!("Running kprove: {:?} {}", benchmarkpath, specname);
 
     let mut output_file_path = benchmarkpath.to_path_buf();
@@ -29,8 +32,8 @@ pub fn run(benchmarkpath: &Path, specname: &str) -> KResult {
     let _ = fs::remove_file(&error_file_path);
 
     let javapath = std::env::var("APP_JAVA_PATH").unwrap();
-    let kpath = std::env::var("APP_K_PATH").unwrap();
-    let sempath = std::env::var("APP_SEMANTICS_PATH").unwrap();
+    //let kpath = std::env::var("APP_K_PATH").unwrap();
+    //let sempath = std::env::var("APP_SEMANTICS_PATH").unwrap();
 
     let cppath = String::from(kpath).add("/target/release/k/lib/java/*");
 
@@ -76,21 +79,47 @@ pub fn run(benchmarkpath: &Path, specname: &str) -> KResult {
         .spawn()
         .expect("Failed to execute process");
 
-    let one_sec = Duration::from_secs(600);
-    let status_code = match child.wait_timeout(one_sec).unwrap() {
-        Some(status) => status.code().unwrap(),
+    let status_code = match timeout {
+        Some(timeout) => {
+            let timeout = Duration::from_secs(timeout as u64);
+            match child.wait_timeout(timeout).unwrap() {
+                Some(status) => status.code(),
+                None => {
+                    info!("Child hasn't exited yet. Send kill signal");
+                    child.kill().expect("child.kill returned error");
+                    let wait_result = child.wait().expect("child.wait returned error");
+                    wait_result.code()
+                }
+            }
+        },
         None => {
-            // child hasn't exited yet
-            child.kill().unwrap();
-            child.wait().unwrap().code().unwrap()
+            let wait_result = child.wait().expect("child.wait returned error");
+            wait_result.code()
         }
     };
     info!("Terminated K prover: {:?} {:?}", status_code, now.elapsed().as_secs());
 
+
+    let fout = File::open(&output_file_path).expect("Output file not found");
+    let reader = BufReader::new(fout);
+    let lines = reader.lines();
+    let mut proved = None;
+    for ol in lines {
+        let l = ol.unwrap();
+        if l.trim() == "#True" {
+            proved = Some(true);
+        }
+        if l.trim() == "false" {
+            proved = Some(false);
+        }
+    }
+
     let res = KResult {
         output_file_path: Some(output_file_path),
         error_file_path: Some(error_file_path),
-        status_code
+        status_code,
+        timed_out: status_code.is_none(),
+        proved
     };
 
     return res;

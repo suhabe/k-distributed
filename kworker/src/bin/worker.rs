@@ -13,6 +13,7 @@ use std::time;
 use std::thread::{sleep};
 use log::{info};
 use std::path::PathBuf;
+use std::ops::Add;
 
 fn run(job_id: i32) {
     let job = exec(|tx| {get_job(tx, job_id)});
@@ -27,7 +28,14 @@ fn run(job_id: i32) {
     let mut gen_dir = down_dir.clone();
     gen_dir.push("generated");
 
-    let kres = k::run(gen_dir.as_path(), &job.spec_filename);
+    let apppath = std::env::var("APP_PATH").unwrap();
+    let kpath = String::from(apppath.to_owned()).add("/").add(&job.kprove).add("/").add("k-distribution");
+    let sempath = String::from(apppath.to_owned()).add("/").add(&job.semantics).add("/").add(".build/java");
+
+    info!("KPATH: {}", kpath);
+    info!("SEMPATH: {}", sempath);
+
+    let kres = k::run(gen_dir.as_path(), &job.spec_filename, &kpath, &sempath, job.timeout_sec);
 
     let output_key = match kres.output_file_path {
         Some(ref p) => upload_log(&client, &s3_bucket, &s3_key, p),
@@ -39,7 +47,7 @@ fn run(job_id: i32) {
         None => String::from("")
     };
 
-    exec(|tx| {complete_job(tx, job_id, &output_key, &error_key, kres.status_code)});
+    exec(|tx| {complete_job(tx, job_id, &output_key, &error_key, kres.status_code, kres.timed_out, kres.proved)});
 }
 
 fn upload_log(client: &S3Client, s3_bucket: &String, s3_key: &String, p: &PathBuf) -> String {

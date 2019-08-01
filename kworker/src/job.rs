@@ -5,11 +5,15 @@ extern crate serde;
 use postgres::Transaction;
 use serde::Serialize;
 use chrono::{DateTime, Utc};
+use crate::s3::{s3_url_opt};
 
 #[derive(Debug,Serialize)]
 pub struct Job {
     pub id: i32,
-    pub name: String,
+    pub benchmark_name: String,
+    pub spec_name: String,
+    pub kprove: String,
+    pub semantics: String,
     pub request_dt: Option<chrono::DateTime<Utc>>,
     pub s3_bucket: Option<String>,
     pub s3_key: Option<String>,
@@ -19,7 +23,23 @@ pub struct Job {
     pub output_log_s3_key: Option<String>,
     pub error_log_s3_key: Option<String>,
     pub status_code: Option<i32>,
-    pub completed_dt: Option<chrono::DateTime<Utc>>
+    pub completed_dt: Option<chrono::DateTime<Utc>>,
+    pub timed_out: Option<bool>,
+    pub proved: Option<bool>,
+}
+
+impl Job {
+    pub fn output_log_s3_url(self: &Job) -> Option<String> {
+        s3_url_opt(self.s3_bucket.to_owned(), self.output_log_s3_key.to_owned())
+    }
+
+    pub fn error_log_s3_url(self: &Job) -> Option<String> {
+        s3_url_opt(self.s3_bucket.to_owned(), self.error_log_s3_key.to_owned())
+    }
+
+    pub fn get_processing_secs(self: &Job) -> Option<i64> {
+        Some(self.completed_dt?.signed_duration_since(self.processing_dt?).num_seconds())
+    }
 }
 
 pub fn get_job(tx: &mut Transaction, job_id: i32) -> Job {
@@ -39,10 +59,10 @@ pub fn list_jobs(tx: &mut Transaction) {
 }
 
 //benchmark_name, bucket_name, benchmark_key, 1800
-pub fn new_job(tx: &mut Transaction, benchmark_name: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) {
+pub fn new_job(tx: &mut Transaction, benchmark_name: &String, spec_name: &String, kprove: &String, semantics: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) {
     let request_dt = Utc::now();
-    tx.execute("INSERT INTO job (name,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6)",
-                  &[benchmark_name, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]).unwrap();
+    tx.execute("INSERT INTO job (benchmark_name,spec_name,kprove,semantics,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+                  &[benchmark_name, spec_name, kprove, semantics, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]).unwrap();
 }
 
 pub fn reset_jobs(tx: &mut Transaction) -> i32  {
@@ -55,10 +75,10 @@ pub fn delete_jobs(tx: &mut Transaction) -> i32  {
     0
 }
 
-pub fn complete_job(tx: &mut Transaction, id: i32, output_log_s3_key: &String, error_log_s3_key: &String, status_code: i32) -> i32  {
+pub fn complete_job(tx: &mut Transaction, id: i32, output_log_s3_key: &String, error_log_s3_key: &String, status_code: Option<i32>, timed_out: bool, proved: Option<bool>) -> i32  {
     let now = Utc::now();
-    tx.execute("UPDATE job SET output_log_s3_key = $1, error_log_s3_key = $2, status_code = $3, completed_dt = $4 where id = $5",
-               &[&output_log_s3_key, &error_log_s3_key, &status_code, &now, &id]).unwrap();
+    tx.execute("UPDATE job SET output_log_s3_key = $1, error_log_s3_key = $2, status_code = $3, completed_dt = $4, timed_out = $5, proved = $6 where id = $7",
+               &[&output_log_s3_key, &error_log_s3_key, &status_code, &now, &timed_out, &proved, &id]).unwrap();
     0
 }
 
@@ -92,7 +112,10 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
     for row in tx.query(query.as_str(), &[]).unwrap() {
 
         let id: i32 = row.get("id");
-        let name: String = row.get("name");
+        let benchmark_name: String = row.get("benchmark_name");
+        let spec_name: String = row.get("spec_name");
+        let kprove: String = row.get("kprove");
+        let semantics: String = row.get("semantics");
         let request_dt: Option<DateTime<Utc>> = row.get("request_dt");
         let s3_bucket: Option<String> = row.get("s3_bucket");
         let s3_key: Option<String> = row.get("s3_key");
@@ -103,10 +126,15 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
         let error_log_s3_key: Option<String> = row.get("error_log_s3_key");
         let status_code: Option<i32> = row.get("status_code");
         let completed_dt: Option<DateTime<Utc>> = row.get("completed_dt");
+        let timed_out: Option<bool> = row.get("timed_out");
+        let proved: Option<bool> = row.get("proved");
 
         let job = Job {
             id,
-            name,
+            benchmark_name,
+            spec_name,
+            kprove,
+            semantics,
             request_dt,
             s3_bucket,
             s3_key,
@@ -116,7 +144,9 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
             output_log_s3_key,
             error_log_s3_key,
             status_code,
-            completed_dt
+            completed_dt,
+            timed_out,
+            proved
         };
 
         jobs.push(job);
