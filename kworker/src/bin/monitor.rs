@@ -41,7 +41,9 @@ fn main() -> Result<(), Box<dyn Error>>  {
 
     let handlebars = Handlebars::new();
 
-    let jobs = exec(|tx| get_jobs(tx,None));
+    let mut jobs = exec(|tx| get_jobs(tx,None));
+
+    jobs.sort_by_key(|j| j.request_dt);
 
     let mut rows = Vec::new();
     for j in jobs {
@@ -52,7 +54,13 @@ fn main() -> Result<(), Box<dyn Error>>  {
             benchmark_name: j.benchmark_name.to_owned(),
             processing_secs: j.get_processing_secs().map_or(e(), |x| x.to_string()),
             spec_name: j.spec_name.to_owned(),
-            status_code: j.status_code.map_or(e(), |x| x.to_string()),
+            status_code: match j.status_code {
+                Some(c) => c.to_string(),
+                None => match j.timed_out {
+                    Some(true) => String::from("Timed out"),
+                    _ => e()
+                }
+            },
             out_url: j.output_log_s3_url().unwrap_or(e()),
             err_url: j.error_log_s3_url().unwrap_or(e()),
             proved: j.proved.map_or(e(), |x| x.to_string()),
@@ -62,8 +70,6 @@ fn main() -> Result<(), Box<dyn Error>>  {
             })
         })
     }
-
-    rows.sort();
 
     let kdist = env::var("KDIST_HOME").expect("KDIST_HOME not set");
     let template = format!("{}/kworker/ui/templates/monitor.hbs", kdist);

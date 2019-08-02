@@ -33,7 +33,7 @@ fn main() {
 
     s3_upload_dir(&client, &bucket_name, &benchmark_key, &benchmark_dir);
 
-    exec(|trans| { new_job(trans, &benchmark_name, &spec_filename, &kprove, &semantics, &bucket_name, &benchmark_key, &spec_filename, 1800) } );
+    exec(|trans| { new_job(trans, &benchmark_name, &spec_filename, &kprove, &semantics, &bucket_name, &benchmark_key, &spec_filename, 3600) } );
 
-    exec(list_jobs);
+    //exec(list_jobs);
 }

@@ -45,7 +45,7 @@ pub fn run(benchmarkpath: &Path, specname: &str, kpath: &str, sempath: &str, tim
 
     let args = ["-Dfile.encoding=UTF-8",
         "-Djava.awt.headless=true",
-        "-Xms1024m", "-Xmx8192m", "-Xss32m",
+        "-Xms10024m", "-Xmx10192m", "-Xss32m",
         "-XX:+TieredCompilation",
         "-ea",
         "-cp", &cppath,
