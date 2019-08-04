@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+eksctl create cluster --name kdistributed --version 1.13 --nodegroup-name kworkergroup --node-type c5.2xlarge --nodes 20 --nodes-min 1 --nodes-max 20 --node-ami auto
