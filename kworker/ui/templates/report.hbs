@@ -1,0 +1,41 @@
+<html>
+    <style>
+        table, th, td {
+            border: 1px solid #cccccc;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 5px;
+        }
+
+        body {
+            font-family: "Arial";
+        }
+    </style>
+
+    <body>
+        <table>
+            <tr>
+                <td style="font-weight: bold">Program</td>
+                <td style="font-weight: bold">Spec</td>
+                <td style="font-weight: bold">Prover Time (min)</td>
+                <td style="font-weight: bold">Status Code</td>
+                <td style="font-weight: bold">Proved</td>
+                <td style="font-weight: bold">Output URL</td>
+                <td style="font-weight: bold">Error URL</td>
+            </tr>
+        {{#each this}}
+            <tr>
+                <td>{{benchmark_name}}</td>
+                <td>{{spec_name}}</td>
+                <td>{{processing_mins}}</td>
+                <td>{{status_code}}</td>
+                <td bgcolor="{{proved_color}}">{{proved}}</span></td>
+                <td><a href="{{out_url}}">stdout</a></td>
+                <td><a href="{{err_url}}">stderr</a></td>
+            </tr>
+        {{/each}}
+        </table>
+    </body>
+</html>

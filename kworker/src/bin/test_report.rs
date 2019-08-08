@@ -100,5 +100,4 @@ fn generate(template_path: String, output_path: String, rows: &Vec<Row>) {
     let mut output_file = File::create(&output_path).unwrap();
     handlebars.render_template_source_to_write(&mut template_file, &rows, &mut output_file).unwrap();
     println!("Generated file {}", &output_path);
-
 }
