@@ -23,7 +23,7 @@ fn run(job_id: i32) {
     let s3_bucket = job.s3_bucket.unwrap().to_owned();
     let s3_key = job.s3_key.unwrap().to_owned();
 
-    let down_dir = s3_download_dir(&client, &s3_bucket, &s3_key, None, &dest_dir);
+    let down_dir = s3_download_dir(&client, &s3_bucket, &s3_key, |x| true, &dest_dir);
 
     let mut gen_dir = down_dir.clone();
     gen_dir.push("generated");

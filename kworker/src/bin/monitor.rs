@@ -14,9 +14,8 @@ use kworker::db::exec;
 use serde::Serialize;
 use chrono::{Local,Utc};
 use itertools::Itertools;
-use difference::Changeset;
 use kworker::s3::s3_download_dir;
-use rusoto_s3::{S3Client, S3, PutObjectRequest, ListObjectsRequest, GetObjectRequest};
+use rusoto_s3::{S3Client};
 use rusoto_core::Region;
 use std::process::Command;
 
@@ -32,8 +31,9 @@ struct Row {
     pub status_code:String,
     pub out_url:String,
     pub err_url:String,
-    pub proved:String,
-    pub proved_color:String
+    pub result:String,
+    pub result_color:String,
+    //pub spec_url:String
 }
 
 #[derive(Serialize, Debug)]
@@ -67,11 +67,27 @@ fn e() -> String {
 }
 
 fn row(j: &Job) -> Row {
-    let proved;
+    let result;
+    let result_color;
     if j.completed_dt.is_some() {
-        proved = Some(j.proved.is_some() && j.proved.unwrap());
+        if let Some(true) = j.proved {
+            result = String::from("proved true");
+            result_color = "#98FB98";
+        } else if let Some(false) = j.proved {
+            result = String::from("proved false");
+            result_color = "#FFCCCB";
+        } else {
+            if j.timed_out.is_some() && j.timed_out.unwrap() {
+                result = String::from("timeout");
+                result_color = "#FFCCCB";
+            } else {
+                result = String::from("error");
+                result_color = "#FFCCCB";
+            }
+        }
     } else {
-        proved = None;
+        result = String::from("incomplete");
+        result_color = "#FFD300";
     }
 
     Row {
@@ -84,18 +100,13 @@ fn row(j: &Job) -> Row {
         spec_name: j.spec_name.to_owned(),
         status_code: match j.status_code {
             Some(c) => c.to_string(),
-            None => match j.timed_out {
-                Some(true) => String::from("Timed out"),
-                _ => e()
-            }
+            None => e()
         },
         out_url: j.output_log_s3_url().unwrap_or(e()),
         err_url: j.error_log_s3_url().unwrap_or(e()),
-        proved: proved.map_or(e(), |x| if x { String::from("yes") } else { String::from("no") }),
-        proved_color: proved.map_or(String::from("#ffffff"), |x| match x {
-            true => String::from("#98FB98"),
-            false => String::from("#FFCCCB")
-        })
+        result,
+        result_color: String::from(result_color),
+       // spec_url: j.spec
     }
 }
 
@@ -103,7 +114,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    gen_tests()?;
+    //gen_tests()?;
+    gen_monitor()?;
 
     Ok(())
 }
@@ -125,9 +137,10 @@ fn gen_monitor() -> Result<(), Box<dyn Error>> {
     let monitor_file = format!("{}/monitor.html", gendir);
     generate(monitor_template, monitor_file, &rows);
 
+    /*
     let report_template = format!("{}/kworker/ui/templates/report.hbs", kdist);
     let report_file = format!("{}/report.html", gendir);
-    generate(report_template, report_file, &rows);
+    generate(report_template, report_file, &rows);*/
 
     Ok(())
 }
@@ -170,7 +183,7 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
         let s3_bucket = job.s3_bucket.as_ref().unwrap();
         let s3_key = job.s3_key.as_ref().unwrap();
 
-        let down_dir = s3_download_dir(&client, &s3_bucket, &s3_key, Some(|k:&String| k.ends_with(".sol")), &tmpdir);
+        let down_dir = s3_download_dir(&client, &s3_bucket, &s3_key, |k:&String| k.ends_with(".sol"), &tmpdir);
         let sol_file = read_dir(&down_dir).unwrap().next().unwrap().unwrap().path();
         println!("sol_file: {:?}", &sol_file);
         println!("diff_source_file: {:?}", diff_source_file);
@@ -200,7 +213,7 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
 
         println!("diff2html {}", args.join(" "));
 
-        let output = Command::new("diff2html")
+        Command::new("diff2html")
             .args(&args)
             .output()
             .expect("failed to execute process");
@@ -228,8 +241,6 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
         .filter(|j| j.benchmark_name.starts_with(correct_benchmark))
         .filter(|j| j.id >= 552)
         .collect_vec();
-
-    let correct_job = correct_jobs[0];
 
     let results = Results {
         summary,

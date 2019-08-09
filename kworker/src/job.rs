@@ -37,6 +37,10 @@ impl Job {
         s3_url_opt(self.s3_bucket.to_owned(), self.error_log_s3_key.to_owned())
     }
 
+    pub fn spec_url(self: &Job) -> Option<String> {
+        s3_url_opt(self.s3_bucket.to_owned(), Some(format!("{}/{}", "generated", self.spec_filename.to_owned())))
+    }
+
     pub fn get_processing_secs(self: &Job) -> Option<i64> {
         Some(self.completed_dt?.signed_duration_since(self.processing_dt?).num_seconds())
     }

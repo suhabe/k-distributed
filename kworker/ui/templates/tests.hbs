@@ -54,16 +54,19 @@
                 <td class="result-col" style="font-weight: bold">Spec</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Time (min)</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Status Code</td>
-                <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Proved</td>
+                <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Result</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Output</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Error</td>
             </tr>
             {{#each correct.rows}}
                 <tr class="result-row">
-                    <td class="result-col" style="font-size: 12px">{{spec_name}}</td>
+                    <td class="result-col" style="font-size: 12px">
+
+                        {{spec_name}}
+                    </td>
                     <td class="result-col" style="text-align: center">{{processing_mins}}</td>
                     <td class="result-col" style="text-align: center">{{status_code}}</td>
-                    <td class="result-col" style="text-align: center" bgcolor="{{proved_color}}">{{proved}}</span></td>
+                    <td class="result-col" style="text-align: center" bgcolor="{{result_color}}">{{result}}</span></td>
                     <td class="result-col" style="text-align: center"><a href="{{out_url}}">stdout</a></td>
                     <td class="result-col" style="text-align: center"><a href="{{err_url}}">stderr</a></td>
                 </tr>
@@ -94,7 +97,7 @@
                 <td class="result-col" style="font-weight: bold">Spec</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Time (min)</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Status Code</td>
-                <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Proved</td>
+                <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Result</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Output</td>
                 <td class="result-col" style="font-weight: bold; width: 100px; text-align: center">Error</td>
             </tr>
@@ -103,7 +106,7 @@
                 <td class="result-col" style="font-size: 12px">{{spec_name}}</td>
                 <td class="result-col" style="text-align: center">{{processing_mins}}</td>
                 <td class="result-col" style="text-align: center">{{status_code}}</td>
-                <td class="result-col" style="text-align: center" bgcolor="{{proved_color}}">{{proved}}</span></td>
+                <td class="result-col" style="text-align: center" bgcolor="{{result_color}}">{{result}}</span></td>
                 <td class="result-col" style="text-align: center"><a href="{{out_url}}">stdout</a></td>
                 <td class="result-col" style="text-align: center"><a href="{{err_url}}">stderr</a></td>
             </tr>
