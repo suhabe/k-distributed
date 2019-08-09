@@ -58,7 +58,8 @@ pub fn s3_upload_file(client: &S3Client, bucket_name: &String, bucket_key: &Stri
     client.put_object(req).sync().expect("Couldn't PUT object");
 }
 
-pub fn s3_download_dir(client: &S3Client, bucket_name: &String, key_root_dir: &String, dest_dir: &String) -> PathBuf {
+pub fn s3_download_dir<F>(client: &S3Client, bucket_name: &String, key_root_dir: &String, key_filter: Option<F>, dest_dir: &String) -> PathBuf
+    where F: FnOnce(&String) -> bool, F: Copy {
     info!("Downloading from S3 {} {} {}", &bucket_name, &key_root_dir, &dest_dir);
 
     let req = ListObjectsRequest {
@@ -74,6 +75,12 @@ pub fn s3_download_dir(client: &S3Client, bucket_name: &String, key_root_dir: &S
         .collect::<Vec<String>>();
 
     for key in keys {
+        if let Some(keep) = key_filter {
+            if !keep(&key) {
+                continue;
+            }
+        }
+
         let path = Path::new(dest_dir).join(Path::new(&key));
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
 
