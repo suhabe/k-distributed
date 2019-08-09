@@ -37,11 +37,25 @@ struct Row {
 }
 
 #[derive(Serialize, Debug)]
-struct Pgm {
+struct TestCaseDetail {
     pub name:String,
     pub rows:Vec<Row>,
     pub diff:String
 
+}
+
+#[derive(Serialize, Debug)]
+struct TestCaseSummary {
+    pub name:String,
+    pub passing:String,
+    pub passing_color:String
+}
+
+#[derive(Serialize, Debug)]
+struct Results {
+    pub correct: TestCaseDetail,
+    pub summary: Vec<TestCaseSummary>,
+    pub details: Vec<TestCaseDetail>
 }
 
 fn to_local_str(x: chrono::DateTime<Utc>) -> String {
@@ -132,19 +146,25 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
     let gendir = format!("{}/kworker/generated", kdist);
     let tmpdir = String::from("/tmp/k-distributed");
     let resourcesdir = "/home/sbugrara/k-distributed/kworker/resources";
+    let correct_benchmark = "multisig13";
 
     let grouped_jobs = jobs.iter()
         .filter(|j| j.request_dt.unwrap().ge(&cutoff))
         .filter(|j| j.benchmark_name.starts_with(prefix))
+        .filter(|j| !j.benchmark_name.starts_with("TEST-call_10.sol"))
+        .filter(|j| !j.benchmark_name.starts_with("TEST-correct.sol"))
         .group_by(|j| j.benchmark_name.to_owned());
 
     remove_dir_all(&tmpdir)?;
     create_dir(&tmpdir)?;
 
-    let mut pgms = Vec::new();
+    let mut summary = Vec::new();
+    let mut details = Vec::new();
     for (key,group) in &grouped_jobs {
         let jobs: Vec<&Job> = group.into_iter().collect();
         let rows = jobs.iter().map(|j| row(&j)).collect();
+        let has_failed_spec = jobs.iter()
+            .any(|j| j.completed_dt.is_some() && (j.proved.is_none() || !j.proved.unwrap()));
 
         let job = jobs[0];
         let s3_bucket = job.s3_bucket.as_ref().unwrap();
@@ -189,26 +209,50 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
 
         let diffhtml = read_to_string(diffhtml_file_path).unwrap();
 
-        pgms.push(Pgm {
-            name: key,
+        details.push(TestCaseDetail {
+            name: key.to_owned(),
             rows: rows,
             diff: diffhtml
         });
 
+        summary.push(TestCaseSummary {
+            name: key.to_owned(),
+            passing: String::from(if has_failed_spec { "yes" } else { "no" }),
+            passing_color: String::from(if has_failed_spec { "#98FB98" } else { "#FFCCCB" })
+        })
     }
+
+
+    let correct_jobs = jobs.iter()
+        .filter(|j| j.request_dt.unwrap().ge(&cutoff))
+        .filter(|j| j.benchmark_name.starts_with(correct_benchmark))
+        .filter(|j| j.id >= 552)
+        .collect_vec();
+
+    let correct_job = correct_jobs[0];
+
+    let results = Results {
+        summary,
+        details,
+        correct: TestCaseDetail {
+            name: e(),
+            rows: correct_jobs.iter().map(|j| row(&j)).collect(),
+            diff: e()
+        }
+    };
 
     let tests_template = format!("{}/kworker/ui/templates/tests.hbs", kdist);
     let tests_file = format!("{}/tests.html", gendir);
-    generate(tests_template, tests_file, &pgms);
+    generate(tests_template, tests_file, &results);
 
     Ok(())
 }
 
-fn generate<T>(template_path: String, output_path: String, rows: &Vec<T>) where T: Serialize {
+fn generate<T>(template_path: String, output_path: String, obj: &T) where T: Serialize {
     let handlebars = Handlebars::new();
     let mut template_file = File::open(template_path).unwrap();
     let mut output_file = File::create(&output_path).unwrap();
-    handlebars.render_template_source_to_write(&mut template_file, &rows, &mut output_file).unwrap();
+    handlebars.render_template_source_to_write(&mut template_file, obj, &mut output_file).unwrap();
     println!("Generated file {}", &output_path);
 
 }
