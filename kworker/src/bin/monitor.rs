@@ -110,17 +110,15 @@ fn row(j: &Job) -> Row {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    //gen_tests()?;
-    gen_monitor()?;
-
-    Ok(())
+    //gen_tests();
+    gen_monitor();
 }
 
-fn gen_monitor() -> Result<(), Box<dyn Error>> {
+fn gen_monitor() {
     let mut jobs = exec(|tx| get_jobs(tx, None));
     jobs.sort_by_key(|j| j.request_dt);
     let mut rows = Vec::new();
@@ -141,20 +139,18 @@ fn gen_monitor() -> Result<(), Box<dyn Error>> {
     let report_template = format!("{}/kworker/ui/templates/report.hbs", kdist);
     let report_file = format!("{}/report.html", gendir);
     generate(report_template, report_file, &rows);*/
-
-    Ok(())
 }
 
-fn gen_tests() -> Result<(), Box<dyn Error>> {
+fn gen_tests() {
     let client = S3Client::new(Region::UsEast2);
 
     let mut jobs = exec(|tx| get_jobs(tx, None));
     jobs.sort_by(|j1,j2| j1.benchmark_name.cmp(&j2.benchmark_name)
         .then(j1.request_dt.cmp(&j2.request_dt)));
 
-    let cutoff = chrono::DateTime::parse_from_rfc3339("2019-08-04T00:00:00+00:00").unwrap().with_timezone(&Utc);
+    let cutoff = chrono::DateTime::parse_from_rfc3339("2019-08-09T00:00:00+00:00").unwrap().with_timezone(&Utc);
     let prefix = "TEST-";
-    let diff_source_file = "/home/sbugrara/kevm-verify-benchmarks/multisig13/multisig13.sol";
+    let diff_source_file = "/home/sbugrara/simplemultisig-verify/SimpleMultiSigT3/src/SimpleMultiSigT3.sol";
     let kdist = env::var("KDIST_HOME").expect("KDIST_HOME not set");
     let gendir = format!("{}/kworker/generated", kdist);
     let tmpdir = String::from("/tmp/k-distributed");
@@ -164,12 +160,12 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
     let grouped_jobs = jobs.iter()
         .filter(|j| j.request_dt.unwrap().ge(&cutoff))
         .filter(|j| j.benchmark_name.starts_with(prefix))
-        .filter(|j| !j.benchmark_name.starts_with("TEST-call_10.sol"))
-        .filter(|j| !j.benchmark_name.starts_with("TEST-correct.sol"))
+        //.filter(|j| !j.benchmark_name.starts_with("TEST-call_10.sol"))
+        //.filter(|j| !j.benchmark_name.starts_with("TEST-correct.sol"))
         .group_by(|j| j.benchmark_name.to_owned());
 
-    remove_dir_all(&tmpdir)?;
-    create_dir(&tmpdir)?;
+    remove_dir_all(&tmpdir);
+    create_dir(&tmpdir).expect("Cannot create directory");
 
     let mut summary = Vec::new();
     let mut details = Vec::new();
@@ -255,8 +251,6 @@ fn gen_tests() -> Result<(), Box<dyn Error>> {
     let tests_template = format!("{}/kworker/ui/templates/tests.hbs", kdist);
     let tests_file = format!("{}/tests.html", gendir);
     generate(tests_template, tests_file, &results);
-
-    Ok(())
 }
 
 fn generate<T>(template_path: String, output_path: String, obj: &T) where T: Serialize {
