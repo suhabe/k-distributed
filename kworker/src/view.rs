@@ -7,6 +7,7 @@ use crate::job::{Job};
 
 #[derive(Serialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Row {
+    pub id: i32,
     pub completed_dt:String,
     pub request_dt:String,
     pub processed_dt:String,
@@ -77,6 +78,7 @@ pub fn row(j: &Job) -> Row {
     }
 
     Row {
+        id: j.id,
         completed_dt: j.completed_dt.map_or(e(), |x| to_local_str(x)),
         request_dt: j.request_dt.map_or(e(), |x| to_local_str(x)),
         processed_dt: j.processing_dt.map_or(e(), |x| to_local_str(x)),

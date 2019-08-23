@@ -63,10 +63,12 @@ pub fn list_jobs(tx: &mut Transaction) {
 }
 
 //benchmark_name, bucket_name, benchmark_key, 1800
-pub fn new_job(tx: &mut Transaction, benchmark_name: &String, spec_name: &String, kprove: &String, semantics: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) {
+pub fn new_job(tx: &mut Transaction, benchmark_name: &String, spec_name: &String, kprove: &String, semantics: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) -> i32 {
     let request_dt = Utc::now();
-    tx.execute("INSERT INTO job (benchmark_name,spec_name,kprove,semantics,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-                  &[benchmark_name, spec_name, kprove, semantics, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]).unwrap();
+    let result = tx.query("INSERT INTO job (benchmark_name,spec_name,kprove,semantics,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
+                  &[benchmark_name, spec_name, kprove, semantics, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]);
+    let id: i32 = result.unwrap().iter().next().unwrap().get(0);
+    id
 }
 
 pub fn reset_jobs(tx: &mut Transaction) -> i32  {

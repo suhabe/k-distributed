@@ -9,7 +9,8 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Table from "react-bootstrap/Table";
 
-type ProveResult = {
+type Job = {
+    id: number,
     completed_dt: string,
     request_dt: string,
     processed_dt: string,
@@ -28,10 +29,8 @@ type AppProps = {  };
 type AppState = {
     program: string,
     spec: string,
-    proveResult: ProveResult
+    jobs: Job[]
 };
-
-
 
 class App extends React.Component<AppProps, AppState> {
     constructor(props:any) {
@@ -39,20 +38,7 @@ class App extends React.Component<AppProps, AppState> {
         this.state = {
             program: "",
             spec: "",
-            proveResult: {
-                completed_dt: "",
-                request_dt: "",
-                processed_dt: "",
-                processing_secs: "",
-                processing_mins: "",
-                benchmark_name: "",
-                spec_name: "",
-                status_code: "",
-                out_url: "",
-                err_url: "",
-                result: "",
-                result_color: "",
-            }
+            jobs: [] as Job[],
         };
 
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -68,12 +54,25 @@ class App extends React.Component<AppProps, AppState> {
         this.setState({spec: e.target.value});
     }
 
+    handleReload() {
+
+        console.log(this.state.jobs);
+
+        return fetch('/reload', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({job_ids: this.state.jobs.map(job => job.id)})
+        })  .then((response) => response.json())
+            .then((json) => this.setState({...this.state, jobs: json.jobs as Job[]}))
+            .catch(function(error) { console.log("error")});
+    }
+
     handleSubmit(event:any) {
         event.preventDefault();
 
-        console.log("handle request ");
-        //alert('Your favorite flavor is: ' + this.state.value);
-        //event.preventDefault();
         return fetch('/prove', {
             method: 'POST',
             headers: {
@@ -82,11 +81,28 @@ class App extends React.Component<AppProps, AppState> {
             },
             body: JSON.stringify({program: this.state.program, spec: this.state.spec})
         })  .then((response) => response.json())
-            .then((json) => this.setState({ proveResult: json.row}))
-            .catch(function(error) { console.log("error")});
+            .then((json) => {
+                let jobs = json.jobs as Job[];
+                console.log(jobs);
+                this.setState({...this.state, jobs: jobs });
+            }).catch(function(error) { console.log(error)});
     }
 
   render() {
+      let job_rows = this.state.jobs.map(job => {
+          return <tr>
+              <td>{job.spec_name}</td>
+              <td>{job.request_dt}</td>
+              <td>{job.processed_dt}</td>
+              <td>{job.completed_dt}</td>
+              <td>{job.processing_mins}</td>
+              <td>{job.status_code}</td>
+              <td>{job.result}</td>
+              <td><a href="{job.out_url}">stdout</a></td>
+              <td><a href="{job.err_url}">stderr</a></td>
+          </tr>
+      });
+
       return (
         <Container fluid>
             <Form onSubmit={this.handleSubmit}>
@@ -117,6 +133,10 @@ class App extends React.Component<AppProps, AppState> {
                     <Table bordered>
                         <thead>
                             <tr>
+                                <th>Spec</th>
+                                <th>Requested</th>
+                                <th>Processed</th>
+                                <th>Completed</th>
                                 <th>Time</th>
                                 <th>Status Code</th>
                                 <th>Result</th>
@@ -125,15 +145,16 @@ class App extends React.Component<AppProps, AppState> {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>{this.state.proveResult.processing_mins}</td>
-                                <td>{this.state.proveResult.status_code}</td>
-                                <td>{this.state.proveResult.result}</td>
-                                <td><a href="{{out_url}}">stdout</a></td>
-                                <td><a href="{{err_url}}">stderr</a></td>
-                            </tr>
+                        { job_rows }
                         </tbody>
                     </Table>
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <Button variant="primary" type="submit" onClick={() => this.handleReload()}>
+                        Refresh
+                    </Button>
                 </Col>
             </Row>
         </Container>
