@@ -1,0 +1,3 @@
+[submodule "kdev/template/.build/pandoc-tangle"]
+	path = kdev/template/.build/pandoc-tangle
+	url = https://github.com/ehildenb/pandoc-tangle/

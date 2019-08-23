@@ -26,6 +26,8 @@ type ProveResult = {
 
 type AppProps = {  };
 type AppState = {
+    program: string,
+    spec: string,
     proveResult: ProveResult
 };
 
@@ -34,7 +36,10 @@ type AppState = {
 class App extends React.Component<AppProps, AppState> {
     constructor(props:any) {
         super(props);
-        this.state = {proveResult: {
+        this.state = {
+            program: "",
+            spec: "",
+            proveResult: {
                 completed_dt: "",
                 request_dt: "",
                 processed_dt: "",
@@ -49,7 +54,18 @@ class App extends React.Component<AppProps, AppState> {
                 result_color: "",
             }
         };
+
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleProgramChange = this.handleProgramChange.bind(this);
+        this.handleSpecChange = this.handleSpecChange.bind(this);
+    }
+
+    handleProgramChange(e:any) {
+        this.setState({program: e.target.value});
+    }
+
+    handleSpecChange(e:any) {
+        this.setState({spec: e.target.value});
     }
 
     handleSubmit(event:any) {
@@ -64,7 +80,7 @@ class App extends React.Component<AppProps, AppState> {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({program: "fn {}", spec: '<k> ... </k>'})
+            body: JSON.stringify({program: this.state.program, spec: this.state.spec})
         })  .then((response) => response.json())
             .then((json) => this.setState({ proveResult: json.row}))
             .catch(function(error) { console.log("error")});
@@ -78,13 +94,13 @@ class App extends React.Component<AppProps, AppState> {
                     <Col>
                         <Form.Group controlId="exampleForm.ControlTextarea1">
                             <Form.Label>Program</Form.Label>
-                            <Form.Control as="textarea" rows="20" />
+                            <Form.Control as="textarea" rows="20" onChange={this.handleProgramChange} />
                         </Form.Group>
                     </Col>
                     <Col>
                         <Form.Group controlId="exampleForm.ControlTextarea1">
                             <Form.Label>Specification</Form.Label>
-                            <Form.Control as="textarea" rows="20" />
+                            <Form.Control as="textarea" rows="20" onChange={this.handleSpecChange}/>
                         </Form.Group>
                     </Col>
                 </Row>
