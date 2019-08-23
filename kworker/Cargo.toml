@@ -5,6 +5,7 @@ authors = ["Suhabe Bugrara <suhabe@bugrara.com>"]
 edition = "2018"
 
 [dependencies]
+openssl = "0.10.24"
 rusoto_core = "0.40.0"
 rusoto_s3 = "0.40.0"
 rusoto_rds = "0.40.0"
