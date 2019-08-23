@@ -97,9 +97,9 @@ class App extends React.Component<AppProps, AppState> {
               <td>{job.completed_dt}</td>
               <td>{job.processing_mins}</td>
               <td>{job.status_code}</td>
-              <td>{job.result}</td>
-              <td><a href="{job.out_url}">stdout</a></td>
-              <td><a href="{job.err_url}">stderr</a></td>
+              <td style={{'backgroundColor': job.result_color}}>{job.result}</td>
+              <td><a href={job.out_url}>stdout</a></td>
+              <td><a href={job.err_url}>stderr</a></td>
           </tr>
       });
 
@@ -128,6 +128,16 @@ class App extends React.Component<AppProps, AppState> {
                     </Col>
                 </Row>
             </Form>
+            <Row>
+                <Col>
+                    &nbsp;
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    &nbsp;
+                </Col>
+            </Row>
             <Row>
                 <Col>
                     <Table bordered>

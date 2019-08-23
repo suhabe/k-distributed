@@ -71,7 +71,7 @@ fn prove(pr: web::Json<ProveRequest>) -> Result<web::Json<ProveResponse>,actix_w
 
         let dirpath = std::path::PathBuf::from(&programdir);
         let kprove = String::from("k");
-        let semantics = String::from("evm-semantics-call-log");
+        let semantics = String::from("evm-semantics");
 
         let dirpathbuf = std::fs::canonicalize(&dirpath).unwrap();
         let benchmark_dir = String::from(dirpathbuf.as_path().to_str().unwrap());
