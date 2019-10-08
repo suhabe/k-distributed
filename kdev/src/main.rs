@@ -77,7 +77,7 @@ fn prove(pr: web::Json<ProveRequest>) -> Result<web::Json<ProveResponse>,actix_w
         let benchmark_dir = String::from(dirpathbuf.as_path().to_str().unwrap());
         let benchmark_name = String::from(dirpath.file_name().unwrap().to_str().unwrap());
         let benchmark_key = format!("{}-{}", benchmark_name, Uuid::new_v4());
-        //let job_name = format!("{}:{}", benchmark_name, spec_filename);
+        //let job_name = format!("{}:{}", benchmark_ name, spec_filename);
 
         let client = rusoto_s3::S3Client::new(rusoto_core::Region::UsEast2);
         let bucket_name = String::from("kjob");

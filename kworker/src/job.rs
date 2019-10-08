@@ -19,12 +19,14 @@ pub struct Job {
     pub s3_key: Option<String>,
     pub spec_filename: String,
     pub timeout_sec: Option<i32>,
+    pub memlimit_mb: Option<i32>,
     pub processing_dt: Option<chrono::DateTime<Utc>>,
     pub output_log_s3_key: Option<String>,
     pub error_log_s3_key: Option<String>,
     pub status_code: Option<i32>,
     pub completed_dt: Option<chrono::DateTime<Utc>>,
     pub timed_out: Option<bool>,
+
     pub proved: Option<bool>,
 }
 
@@ -63,10 +65,10 @@ pub fn list_jobs(tx: &mut Transaction) {
 }
 
 //benchmark_name, bucket_name, benchmark_key, 1800
-pub fn new_job(tx: &mut Transaction, benchmark_name: &String, spec_name: &String, kprove: &String, semantics: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32) -> i32 {
+pub fn new_job(tx: &mut Transaction, benchmark_name: &String, spec_name: &String, kprove: &String, semantics: &String, bucket_name: &String, benchmark_key: &String, spec_filename: &String, timeout_sec: i32, memlimit_mb: i32) -> i32 {
     let request_dt = Utc::now();
-    let result = tx.query("INSERT INTO job (benchmark_name,spec_name,kprove,semantics,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
-                  &[benchmark_name, spec_name, kprove, semantics, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec]);
+    let result = tx.query("INSERT INTO job (benchmark_name,spec_name,kprove,semantics,request_dt,s3_bucket,s3_key,spec_filename,timeout_sec,memlimit_mb) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+                  &[benchmark_name, spec_name, kprove, semantics, &request_dt, bucket_name, benchmark_key, spec_filename, &timeout_sec, &memlimit_mb]);
     let id: i32 = result.unwrap().iter().next().unwrap().get(0);
     id
 }
@@ -134,6 +136,7 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
         let completed_dt: Option<DateTime<Utc>> = row.get("completed_dt");
         let timed_out: Option<bool> = row.get("timed_out");
         let proved: Option<bool> = row.get("proved");
+        let memlimit_mb: Option<i32> = row.get("memlimit_mb");
 
         let job = Job {
             id,
@@ -152,7 +155,8 @@ pub fn get_jobs(tx: &mut Transaction, job_id: Option<i32>) -> Vec<Job> {
             status_code,
             completed_dt,
             timed_out,
-            proved
+            proved,
+            memlimit_mb
         };
 
         jobs.push(job);

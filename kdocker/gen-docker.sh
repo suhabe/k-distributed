@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -Eeuxo pipefail
 
 cd ~/k-distributed/kworker && cargo build
 cd ~/k-distributed/kdocker

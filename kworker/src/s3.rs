@@ -6,7 +6,7 @@ use walkdir::WalkDir;
 use std::io::{Write};
 
 pub fn s3_url(bucket_name: &String, key_name: &String) -> String {
-    format!("http://{}.s3.amazonaws.com/{}", bucket_name, key_name)
+    format!("https://{}.s3.amazonaws.com/{}", bucket_name, key_name)
 }
 
 pub fn s3_url_opt(bucket_name: Option<String>, key_name: Option<String>) -> Option<String> {

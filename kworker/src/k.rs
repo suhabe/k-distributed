@@ -18,7 +18,7 @@ pub struct KResult {
     pub proved: Option<bool>
 }
 
-pub fn run(benchmarkpath: &Path, specname: &str, kpath: &str, sempath: &str, timeout: Option<i32>) -> KResult {
+pub fn run(benchmarkpath: &Path, specname: &str, kpath: &str, sempath: &str, timeout: Option<i32>, memlimit_mb: Option<i32>) -> KResult {
     info!("Running kprove: {:?} {}", benchmarkpath, specname);
 
     let mut output_file_path = benchmarkpath.to_path_buf();
@@ -43,30 +43,44 @@ pub fn run(benchmarkpath: &Path, specname: &str, kpath: &str, sempath: &str, tim
     let specpath = Path::new(benchmarkpath).join(specname);
     let specpath = specpath.to_str().unwrap();
 
-    let args = ["-Dfile.encoding=UTF-8",
-        "-Djava.awt.headless=true",
-        "-Xms10024m", "-Xmx10192m", "-Xss32m",
-        "-XX:+TieredCompilation",
-        "-ea",
-        "-cp", &cppath,
-        "org.kframework.main.Main",
-        "-kprove",
-        "-v",
-        "--debug",
-        "-d",
-        &sempath,
-        "-m", "VERIFICATION",
-        "--z3-impl-timeout", "500",
-        "--deterministic-functions",
-        "--no-exc-wrap",
-        "--cache-func-optimized",
-        "--no-alpha-renaming",
-        "--format-failures",
-        "--boundary-cells", "k,pc",
-        "--log-cells", "k,output,statusCode,localMem,pc,gas,wordStack,callData,accounts,memoryUsed,#pc,#result,#target",
-        "--smt-prelude", smtpreludepath,
-        specpath];
-
+    let mut args = Vec::new();
+    args.push("-Dfile.encoding=UTF-8");
+    args.push("-Djava.awt.headless=true");
+    let mut ms;
+    let mut mx;
+    if let Some(v) = memlimit_mb {
+        ms = format!("-Xms{}m", v);
+        mx = format!("-Xmx{}m", v);
+        args.push(&ms);
+        args.push(&mx);
+    }
+    args.push("-Xss32m");
+    args.push("-XX:+TieredCompilation");
+    args.push("-ea");
+    args.push("-cp");
+    args.push(&cppath);
+    args.push("org.kframework.main.Main");
+    args.push("-kprove");
+    args.push("-v");
+    args.push("--debug");
+    args.push("-d");
+    args.push(&sempath);
+    args.push("-m");
+    args.push("VERIFICATION");
+    args.push("--z3-impl-timeout");
+    args.push("500");
+    args.push("--deterministic-functions");
+    args.push("--no-exc-wrap");
+    args.push("--cache-func-optimized");
+    args.push("--no-alpha-renaming");
+    args.push("--format-failures");
+    args.push("--boundary-cells");
+    args.push("k,pc");
+    args.push("--log-cells");
+    args.push("k,output,statusCode,localMem,pc,gas,wordStack,callData,accounts,memoryUsed,#pc,#result,#target");
+    args.push("--smt-prelude");
+    args.push(smtpreludepath);
+    args.push(specpath);
 
     let now = Instant::now();
     info!("Executing K prover: {} {:?}", javapath, &args.join(" "));

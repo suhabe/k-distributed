@@ -7,6 +7,7 @@
     <mapping directory="$PROJECT_DIR$/k" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/k/haskell-backend/src/main/native/haskell-backend" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/k/llvm-backend/src/main/native/llvm-backend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/kdev/sandbox/.build/pandoc-tangle" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/kdocker/evm-semantics" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/kdocker/evm-semantics-call-log" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/kdocker/evm-semantics-call-log/.build/k" vcs="Git" />

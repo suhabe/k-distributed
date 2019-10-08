@@ -21,6 +21,8 @@ fn main() {
     let spec_filename = String::from(PathBuf::from(&args[2]).file_name().unwrap().to_str().unwrap());
     let kprove = &args[3];//String::from(args[3].to_owned());
     let semantics = &args[4];//String::from(args[4].to_owned());
+    let timeout_sec = &args[6].parse::<i32>().unwrap();
+    let memlimit_mb = &args[5].parse::<i32>().unwrap();
 
     let dirpathbuf = fs::canonicalize(&dirpath).unwrap();
     let benchmark_dir = String::from(dirpathbuf.as_path().to_str().unwrap());
@@ -33,7 +35,7 @@ fn main() {
 
     s3_upload_dir(&client, &bucket_name, &benchmark_key, &benchmark_dir);
 
-    exec(|trans| { new_job(trans, &benchmark_name, &spec_filename, &kprove, &semantics, &bucket_name, &benchmark_key, &spec_filename, 3600*3) } );
+    exec(|trans| { new_job(trans, &benchmark_name, &spec_filename, &kprove, &semantics, &bucket_name, &benchmark_key, &spec_filename, *timeout_sec, *memlimit_mb) } );
 
     //exec(list_jobs);
 }

@@ -35,7 +35,7 @@ fn run(job_id: i32) {
     info!("KPATH: {}", kpath);
     info!("SEMPATH: {}", sempath);
 
-    let kres = k::run(gen_dir.as_path(), &job.spec_filename, &kpath, &sempath, job.timeout_sec);
+    let kres = k::run(gen_dir.as_path(), &job.spec_filename, &kpath, &sempath, job.timeout_sec, job.memlimit_mb);
 
     let output_key = match kres.output_file_path {
         Some(ref p) => upload_log(&client, &s3_bucket, &s3_key, p),
